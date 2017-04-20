@@ -14,7 +14,6 @@ class Formatter(object):
             return out_string
         white_space_expected = self.str_len - len(''.join(out_string_words))
         white_space_for_word = divmod(white_space_expected, (len(out_string_words)-1))
-        # map(lambda word: word+' '*white_space_for_each_word, out_string_words)
         for i in range(len(out_string_words)-1):
             out_string_words[i] += (' '*white_space_for_word[0])
         for i in range(white_space_for_word[1]):
