@@ -10,47 +10,55 @@ class TestWhiteSpaceExtend(unittest.TestCase):
         expect_string = 'Требуется: создать отформатированный текстовый файл,'
         str_len = len(self.input_string)
         formatter = Formatter(str_len=str_len)
-        out_str = formatter._white_space_extend(self.input_string)
+        out_str = formatter._white_space_extend(self.input_string.split())
         self.assertEqual(out_str, expect_string)
 
     def test_ok_add_2_whitespace(self):
         expect_string = 'Требуется:  создать  отформатированный текстовый файл,'
         str_len = len(self.input_string) + 2
         formatter = Formatter(str_len=str_len)
-        out_str = formatter._white_space_extend(self.input_string)
+        out_str = formatter._white_space_extend(self.input_string.split())
         self.assertEqual(out_str, expect_string)
 
     def test_ok_add_3_whitespace(self):
         expect_string = 'Требуется:  создать  отформатированный  текстовый файл,'
         str_len = len(self.input_string) + 3
         formatter = Formatter(str_len=str_len)
-        out_str = formatter._white_space_extend(self.input_string)
+        out_str = formatter._white_space_extend(self.input_string.split())
         self.assertEqual(out_str, expect_string)
 
     def test_ok_add_4_whitespace(self):
         expect_string = 'Требуется:  создать  отформатированный  текстовый  файл,'
         str_len = len(self.input_string) + 4
         formatter = Formatter(str_len=str_len)
-        out_str = formatter._white_space_extend(self.input_string)
+        out_str = formatter._white_space_extend(self.input_string.split())
         self.assertEqual(out_str, expect_string)
 
     def test_ok_add_6_whitespace(self):
         expect_string = 'Требуется:   создать   отформатированный  текстовый  файл,'
         str_len = len(self.input_string) + 6
         formatter = Formatter(str_len=str_len)
-        out_str = formatter._white_space_extend(self.input_string)
+        out_str = formatter._white_space_extend(self.input_string.split())
         self.assertEqual(out_str, expect_string)
 
     def test_ok_add_7_whitespace(self):
         expect_string = 'Требуется:   создать   отформатированный   текстовый  файл,'
         str_len = len(self.input_string) + 7
         formatter = Formatter(str_len=str_len)
-        out_str = formatter._white_space_extend(self.input_string)
+        out_str = formatter._white_space_extend(self.input_string.split())
         self.assertEqual(out_str, expect_string)
 
     def test_ok_add_8_whitespace(self):
         expect_string = 'Требуется:   создать   отформатированный   текстовый   файл,'
         str_len = len(self.input_string) + 8
         formatter = Formatter(str_len=str_len)
-        out_str = formatter._white_space_extend(self.input_string)
+        out_str = formatter._white_space_extend(self.input_string.split())
+        self.assertEqual(out_str, expect_string)
+
+    def test_ok_one_word_whitespace(self):
+        input_string = 'Требуется:'
+        expect_string = '   Требуется:'
+        str_len = len(input_string) + 3
+        formatter = Formatter(str_len=str_len)
+        out_str = formatter._white_space_extend(input_string.split())
         self.assertEqual(out_str, expect_string)
