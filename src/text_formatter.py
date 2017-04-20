@@ -82,7 +82,7 @@ class Formatter(object):
 
 
 if __name__ == '__main__':
-    s_len = 24
-    # s_len = int(input('Введите размер строки: '))
+    # s_len = 24
+    s_len = int(input('Введите размер строки: '))
     formatter = Formatter(s_len)
     formatter.format_text()
