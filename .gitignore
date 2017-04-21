@@ -98,7 +98,6 @@ celerybeat-schedule
 .env
 
 # virtualenv
-.venv
 venv/
 ENV/
 
@@ -113,3 +112,5 @@ ENV/
 .idea
 .idea/
 /Archive/
+/python/src/data/output
+/python/src/tests/data/test_output

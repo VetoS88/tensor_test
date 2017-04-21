@@ -30,6 +30,14 @@ class Formatter(object):
         expected_string_length += len(out_string_words)
         return expected_string_length
 
+    def _word_cutter(self, word):
+        sliced_word = []
+        while len(word) > self.str_len:
+            sliced_word.append(word[:self.str_len])
+            word = word[self.str_len:]
+        sliced_word.append(word)
+        return sliced_word
+
     def format_text(self):
         is_open = self._open_files()
         if not is_open:
@@ -38,24 +46,24 @@ class Formatter(object):
         raw_line = re.sub('\s+', ' ', raw_line)
         words = raw_line.split()
         out_string_words = []
-        for word in words:
-            word_len = len(word)
+        for raw_word in words:
+            word_len = len(raw_word)
             if word_len > self.str_len:
-                # уточнить что делать когда есть слова больше чем указанный размер строки.
-                print('Слово {} длиннее чем указанный размер строки'.format(word))
-                self.out_file.truncate(0)
-                return
-            if out_string_words:
-                expected_string_length = self._count_expected_space(out_string_words, word)
-                if expected_string_length > self.str_len:
-                    out_string = self._white_space_extend(out_string_words)
-                    out_string += '\n'
-                    self.out_file.write(out_string)
-                    out_string_words = [word]
-                else:
-                    out_string_words.append(word)
+                sliced_word = self._word_cutter(raw_word)
             else:
-                out_string_words = [word]
+                sliced_word = [raw_word]
+            for word in sliced_word:
+                if out_string_words:
+                    expected_string_length = self._count_expected_space(out_string_words, word)
+                    if expected_string_length > self.str_len:
+                        out_string = self._white_space_extend(out_string_words)
+                        out_string += '\n'
+                        self.out_file.write(out_string)
+                        out_string_words = [word]
+                    else:
+                        out_string_words.append(word)
+                else:
+                    out_string_words = [word]
         if len(out_string_words) > 1:
             out_string = self._white_space_extend(out_string_words)
             self.out_file.write(out_string)

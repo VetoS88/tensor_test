@@ -15,7 +15,22 @@ class TestOutput(unittest.TestCase):
         formatter.format_text()
         out_form_file = open(self.output_file_name)
         formatted_text = out_form_file.read()
-        expected_text = ''
+        expected_text = \
+            """1 задание.
+     Дано:
+произвольн
+        ый
+ текстовый
+файл     и
+ограничени
+е       по
+    ширине
+  страницы
+  (указано
+    кол-во
+символов).
+Требуется:
+создать"""
         self.assertEqual(formatted_text, expected_text)
 
     def test_format_to_15_chars_str_len(self):
