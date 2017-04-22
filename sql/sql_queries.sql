@@ -45,7 +45,7 @@ return NEW;
 END;
 ' LANGUAGE  plpgsql;
 
-CREATE TRIGGER execute_tranfer сalculate_balance_with_transfer
+CREATE TRIGGER execute_tranfer
 BEFORE INSERT ON transfers FOR EACH ROW
 EXECUTE PROCEDURE сalculate_balance_with_transfer();
 
