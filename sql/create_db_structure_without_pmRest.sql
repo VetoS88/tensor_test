@@ -27,22 +27,62 @@ BEGIN
 SELECT (pmSum-sum(COALESCE(trfSum, 0))) INTO pmRest
 FROM payments LEFT JOIN transfers  ON pmNumber=trfPayment
 WHERE pmNumber = NEW.trfPayment GROUP BY pmNumber;
-RAISE INFO 'pmRest = % ', pmRest;
 IF (pmRest - NEW.trfSum) < 0 THEN
+    RAISE INFO 'pmRest after transaction = %  ', (pmRest-NEW.trfSum);
     RAISE EXCEPTION 'not enough rest ';
 END IF;
 SELECT (trSum-sum(COALESCE(trfSum, 0))) INTO trAccrual
 FROM transactions LEFT JOIN transfers  ON trNumber=trfTransaction
 WHERE trNumber = NEW.trfTransaction GROUP BY trNumber;
-RAISE INFO 'trAccrual = % ', trAccrual;
 IF (trAccrual - NEW.trfSum) < 0 THEN
+    RAISE INFO 'trAccrual after transaction = % ', (trAccrual-NEW.trfSum);
     RAISE EXCEPTION 'оver tranfer sum';
 END IF;
-RAISE EXCEPTION 'STOP transaction ';
-return NEW;
+RETURN NEW;
 END;
 $$ LANGUAGE  plpgsql;
 
 CREATE TRIGGER execute_tranfer
 BEFORE INSERT ON transfers FOR EACH ROW
 EXECUTE PROCEDURE check_valid_sum();
+
+CREATE OR REPLACE FUNCTION check_valid_sum_on_update() RETURNS trigger AS $$
+DECLARE
+pmRest NUMERIC(9,2);
+trAccrual NUMERIC(9,2);
+BEGIN
+SELECT (pmSum-sum(COALESCE(trfSum, 0))) INTO pmRest
+FROM payments LEFT JOIN transfers  ON pmNumber=trfPayment
+WHERE pmNumber = NEW.trfPayment GROUP BY pmNumber;
+IF (NEW.trfPayment = OLD.trfPayment) THEN
+    IF (pmRest + OLD.trfSum - NEW.trfSum) < 0 THEN
+        RAISE INFO 'pmRest after transaction = %  ', (pmRest + OLD.trfSum - NEW.trfSum);
+        RAISE EXCEPTION 'not enough rest ';
+    END IF;
+ELSE
+    IF (pmRest - NEW.trfSum) < 0 THEN
+        RAISE INFO 'pmRest after transaction = %  ', (pmRest-NEW.trfSum);
+        RAISE EXCEPTION 'not enough rest ';
+    END IF;
+END IF;
+SELECT (trSum-sum(COALESCE(trfSum, 0))) INTO trAccrual
+FROM transactions LEFT JOIN transfers  ON trNumber=trfTransaction
+WHERE trNumber = NEW.trfTransaction GROUP BY trNumber;
+IF (NEW.trfTransaction = OLD.trfTransaction) THEN
+    IF (trAccrual + OLD.trfSum - NEW.trfSum) < 0 THEN
+        RAISE INFO 'trAccrual after transaction = % ', (trAccrual + OLD.trfSum -NEW.trfSum);
+        RAISE EXCEPTION 'оver tranfer sum';
+    END IF;
+ELSE
+     IF (trAccrual - NEW.trfSum) < 0 THEN
+        RAISE INFO 'trAccrual after transaction = % ', (trAccrual-NEW.trfSum);
+        RAISE EXCEPTION 'оver tranfer sum';
+    END IF;
+END IF;
+RETURN NEW;
+END;
+$$ LANGUAGE  plpgsql;
+
+CREATE TRIGGER update_tranfer
+BEFORE UPDATE ON transfers FOR EACH ROW
+EXECUTE PROCEDURE check_valid_sum_on_update();
