@@ -54,20 +54,20 @@ _(Далее будет предложено исследование эффек
 
 ###### Для получения данных предлагается 4 возможных запроса.  
 
-1. Универсальный, подходит для обоих разработанных струтур данных.  
+1. Универсальный, подходит для обоих разработанных структур данных.  
 
       SELECT pmId, pmNumber, pmDate, pmSum, (pmSum-sum(COALESCE(trfSum, 0))) as pmRest
       FROM payments LEFT JOIN transfers  ON pmNumber=trfPayment GROUP BY pmNumber;
 
 
-2. Универсальный, подходит для обоих разработанных струтур данных.  
+2. Универсальный, подходит для обоих разработанных структур данных.  
 
      SELECT pmId, pmNumber, pmDate, pmSum, (pmSum-COALESCE((SELECT sum(trfSum) FROM transfers
                                           WHERE pmNumber=trfPayment GROUP BY trfPayment), 0)) AS pmRest
      FROM payments;
 
 
-3. Подходит для обоих разработанных струтур данных.  
+3. Подходит для обоих разработанных структур данных.  
 
       SELECT pmId, pmNumber, pmDate, pmSum, rest.pmRest
       FROM payments JOIN (SELECT pmNumber, sum(pmSum) AS pmRest
@@ -81,7 +81,7 @@ _(Далее будет предложено исследование эффек
 
 4. Запрос для базы данных со структурой описанной в файле **db_structure_additional_pmRest_trAccrual.sql**  
 
-  SELECT * FROM payments;
+      SELECT * FROM payments;
 
 -------------------------------------------------------------------------------------------------------------
 
@@ -107,7 +107,7 @@ _(Далее будет предложено исследование эффек
       
 
 
-#### 2.3) Исследование эффективности запросов.  
+### 2.3) Исследование эффективности запросов.  
 
 Исследование эффективности запросов проводилось на СУБД PostgreSQL 9.5.6.
 
@@ -129,9 +129,12 @@ _(Далее будет предложено исследование эффек
     Execution time: 38.679 ms  
     (3 rows)
 
+
+-----------------------------------------------------------------------------------
+
 Далее представленны планы для других запросов;
 
-#####Запрос №3.
+##### Запрос №3.
 
       EXPLAIN(ANALYZE) SELECT pmId, pmNumber, pmDate, pmSum, rest.pmRest  
       FROM payments JOIN (SELECT pmNumber, sum(pmSum) AS pmRest  
@@ -141,6 +144,8 @@ _(Далее будет предложено исследование эффек
                             SELECT trfId, trfPayment, tfrDate, -trfSum FROM transfers  
                         ) as tr GROUP BY pmNumber) as rest  
       USING (pmNumber);  
+      
+      
                                                      QUERY PLAN  
     Hash Join  (cost=1316.77..1324.02 rows=200 width=53) (actual time=219.429..293.105 rows=15000 loops=1)  
     Hash Cond: ((payments_1.pmnumber)::text = (payments.pmnumber)::text)  
@@ -161,7 +166,9 @@ _(Далее будет предложено исследование эффек
     
     SELECT pmId, pmNumber, pmDate, pmSum, (pmSum-COALESCE((SELECT sum(trfSum) FROM transfers  
                                            WHERE pmNumber=trfPayment GROUP BY trfPayment), 0)) AS pmRest  
-    FROM payments;
+    FROM payments;  
+    
+    
                                                      QUERY PLAN   
        Seq Scan on payments  (cost=0.00..4954281.50 rows=15000 width=21) (actual time=4.521..51724.016 rows=15000 loops=1)
        SubPlan 1
@@ -179,6 +186,8 @@ _(Далее будет предложено исследование эффек
 
     EXPLAIN(ANALYZE) SELECT pmId, pmNumber, pmDate, pmSum, (pmSum-sum(COALESCE(trfSum, 0))) as pmRest  
     FROM payments LEFT JOIN transfers  ON pmNumber=trfPayment GROUP BY pmNumber;  
+    
+    
     
                                                      QUERY PLAN 
        HashAggregate  (cost=1098.93..1323.93 rows=15000 width=27) (actual time=182.229..213.442 rows=15000 loops=1)
