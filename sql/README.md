@@ -1,5 +1,5 @@
-### Задание 2. Пояснительная записка.
-##### 2.1) Предложите решение по хранению данных об оплатах, возможную структуру дополнительных полей/таблиц.
+## Задание 2. Пояснительная записка.
+### 2.1) Предложите решение по хранению данных об оплатах, возможную структуру дополнительных полей/таблиц.
 
 Для реализации структур баз данных и тестирования запросов была выбрана СУБД **PostgreSQL 9.5.6**.
 
@@ -21,7 +21,7 @@
 Главное отличие структур - наличие дополнительных полей _trAccrual_ и _pmRest_ в
 таблицах **transactions** и **payments** соответственно.
 
-##### Структура с дополнительными полями представлена в файле db_structure_additional_pmRest_trAccrual.sql.
+#### Структура с дополнительными полями представлена в файле db_structure_additional_pmRest_trAccrual.sql.
 
 Поле **pmRest** предназначено для хранения суммы остатка, не распределенного по сделкам.    
 Поле **trAccrual** хранит информацию о сумме начисленных средств по сделке.  
@@ -38,7 +38,7 @@ _(Далее будет предложено исследование эффек
 и общей начисленной сумме по сделке. Это позволяет пользователю не заботиться о дополнительной актуализации
 данных при добавлении, изменении, удалении переводов между платежами и сделками.  
 
-##### Структура с дополнительными полями представлена в файле db_structure_without_additional_fields.sql.  
+#### Структура с дополнительными полями представлена в файле db_structure_without_additional_fields.sql.  
 
 При данной структуре данных информация о нераспределенной сумме остатка в таблице не хранится,
 а вычисляется непосредственно при выполнении соответствующего запроса.
@@ -50,65 +50,70 @@ _(Далее будет предложено исследование эффек
 **Ограничения для обеих структур данных описанные ранее были введены исходя из логических соображений
 и являются опциональными.**  
 
-##### 2.2) SQL-запросы, которые отображают  всю  информацию по каждому платежу.  
+### 2.2) SQL-запросы, которые отображают  всю  информацию по каждому платежу.  
 
 ###### Для получения данных предлагается 4 возможных запроса.  
 
 1. Универсальный, подходит для обоих разработанных струтур данных.  
 
-  SELECT pmId, pmNumber, pmDate, pmSum, (pmSum-sum(COALESCE(trfSum, 0))) as pmRest
-  FROM payments LEFT JOIN transfers  ON pmNumber=trfPayment GROUP BY pmNumber;
+      SELECT pmId, pmNumber, pmDate, pmSum, (pmSum-sum(COALESCE(trfSum, 0))) as pmRest
+      FROM payments LEFT JOIN transfers  ON pmNumber=trfPayment GROUP BY pmNumber;
 
 
 2. Универсальный, подходит для обоих разработанных струтур данных.  
 
-  SELECT pmId, pmNumber, pmDate, pmSum, (pmSum-COALESCE((SELECT sum(trfSum) FROM transfers
+     SELECT pmId, pmNumber, pmDate, pmSum, (pmSum-COALESCE((SELECT sum(trfSum) FROM transfers
                                           WHERE pmNumber=trfPayment GROUP BY trfPayment), 0)) AS pmRest
-  FROM payments;
+     FROM payments;
 
 
 3. Подходит для обоих разработанных струтур данных.  
 
-  SELECT pmId, pmNumber, pmDate, pmSum, rest.pmRest
-  FROM payments JOIN (SELECT pmNumber, sum(pmSum) AS pmRest
-                      FROM(
-                          SELECT pmId, pmNumber, pmDate, pmSum FROM payments
-                          UNION ALL
-                          SELECT trfId, trfPayment, tfrDate, -trfSum FROM transfers
-                      ) as tr GROUP BY pmNumber) as rest
-  USING (pmNumber);
+      SELECT pmId, pmNumber, pmDate, pmSum, rest.pmRest
+      FROM payments JOIN (SELECT pmNumber, sum(pmSum) AS pmRest
+                          FROM(
+                              SELECT pmId, pmNumber, pmDate, pmSum FROM payments
+                              UNION ALL
+                              SELECT trfId, trfPayment, tfrDate, -trfSum FROM transfers
+                          ) as tr GROUP BY pmNumber) as rest
+      USING (pmNumber);
 
 
 4. Запрос для базы данных со структурой описанной в файле **db_structure_additional_pmRest_trAccrual.sql**  
 
   SELECT * FROM payments;
 
+-------------------------------------------------------------------------------------------------------------
 
 ###### Результат выполнения запросов(фрагмент):  
   
+     pmid  | pmnumber |           pmdate           |  pmsum  | pmrest  
+    -------+----------+----------------------------+---------+---------
+      5246 | 5237     | 2017-04-27 14:03:25.754615 |  506.00 |  115.07
+       238 | 229      | 2017-04-27 14:03:25.754615 |  456.00 |  456.00
+      4195 | 4186     | 2017-04-27 14:03:25.754615 |  668.00 |  297.68
+      9525 | 9516     | 2017-04-27 14:03:25.754615 |  288.00 |  139.05
+     12451 | 12442    | 2017-04-27 14:03:25.754615 |  987.00 |  142.89
+      9187 | 9178     | 2017-04-27 14:03:25.754615 |  237.00 |  183.10
+      7431 | 7422     | 2017-04-27 14:03:25.754615 |  724.00 |   41.44
+     11907 | 11898    | 2017-04-27 14:03:25.754615 |  661.00 |  228.46
+        71 | 62       | 2017-04-27 14:03:25.754615 |  442.00 |   30.51
+      9326 | 9317     | 2017-04-27 14:03:25.754615 |  263.00 |  117.78
+      4257 | 4248     | 2017-04-27 14:03:25.754615 |  884.00 |  421.13
+      4956 | 4947     | 2017-04-27 14:03:25.754615 |  930.00 |  170.96
+      7373 | 7364     | 2017-04-27 14:03:25.754615 |  807.00 |  214.77
+      7846 | 7837     | 2017-04-27 14:03:25.754615 |  564.00 |  310.81
   
-      pmid  | pmnumber |                          pmdate               |  pmsum  | pmrest    
-    ----------+----------------+------------------------------------------+-------------+---------   
-     10009 | 10000          | 2017-04-27 14:03:25.754615 |  124.00    |   30.49  
-     10010 | 10001          | 2017-04-27 14:03:25.754615 |  25.00      |   25.00  
-     10011 | 10002          | 2017-04-27 14:03:25.754615 |  732.00    |    6.53  
-     10012 | 10003          | 2017-04-27 14:03:25.754615 |  336.00    |  133.11  
-     10013 | 10004          | 2017-04-27 14:03:25.754615 |  450.00    |   63.05   
-     10014 | 10005          | 2017-04-27 14:03:25.754615 |  420.00    |   42.25  
-     10015 | 10006          | 2017-04-27 14:03:25.754615 |  333.00    |  143.75   
-     10016 | 10007          | 2017-04-27 14:03:25.754615 |  948.00    |  222.24  
-     10017 | 10008          | 2017-04-27 14:03:25.754615 |  830.00    |  470.18  
-     10018 | 10009          | 2017-04-27 14:03:25.754615 |  598.00    |  157.07  
       
 
 
-##### 2.3) Исследование эффективности запросов.  
+#### 2.3) Исследование эффективности запросов.  
 
 Исследование эффективности запросов проводилось на СУБД PostgreSQL 9.5.6.
 
-Количество записей в таблице transfers - 14418.
-Количество записей в таблице payments - 15000.
-Количество записей в таблице transactions - 15000.
+Количество записей в таблице transfers - 14418.  
+Количество записей в таблице payments - 15000.  
+Количество записей в таблице transactions - 15000.  
 
 
 Наиболее эффективный запросом является запрос № 4.
@@ -116,9 +121,9 @@ _(Далее будет предложено исследование эффек
 Судить об этом можно основываясь на плане запроса, 
 генерируемом планировщиком бызы данных для заданного оператора.
 
-  EXPLAIN(ANALYZE) SELECT * FROM payments;  
+    EXPLAIN(ANALYZE) SELECT * FROM payments;  
 
-
+                                                     QUERY PLAN 
     Seq Scan on payments  (cost=0.00..344.00 rows=15000 width=27) (actual time=0.017..20.101 rows=15000 loops=1)  
     Planning time: 0.307 ms  
     Execution time: 38.679 ms  
@@ -126,17 +131,17 @@ _(Далее будет предложено исследование эффек
 
 Далее представленны планы для других запросов;
 
-Запрос №3.
+#####Запрос №3.
 
-  EXPLAIN(ANALYZE) SELECT pmId, pmNumber, pmDate, pmSum, rest.pmRest  
-  FROM payments JOIN (SELECT pmNumber, sum(pmSum) AS pmRest  
-                    FROM(  
-                        SELECT pmId, pmNumber, pmDate, pmSum FROM payments  
-                        UNION ALL  
-                        SELECT trfId, trfPayment, tfrDate, -trfSum FROM transfers  
-                    ) as tr GROUP BY pmNumber) as rest  
-  USING (pmNumber);  
-
+      EXPLAIN(ANALYZE) SELECT pmId, pmNumber, pmDate, pmSum, rest.pmRest  
+      FROM payments JOIN (SELECT pmNumber, sum(pmSum) AS pmRest  
+                        FROM(  
+                            SELECT pmId, pmNumber, pmDate, pmSum FROM payments  
+                            UNION ALL  
+                            SELECT trfId, trfPayment, tfrDate, -trfSum FROM transfers  
+                        ) as tr GROUP BY pmNumber) as rest  
+      USING (pmNumber);  
+                                                     QUERY PLAN  
     Hash Join  (cost=1316.77..1324.02 rows=200 width=53) (actual time=219.429..293.105 rows=15000 loops=1)  
     Hash Cond: ((payments_1.pmnumber)::text = (payments.pmnumber)::text)  
     ->  HashAggregate  (cost=785.27..787.77 rows=200 width=23) (actual time=173.065..201.286 rows=15000 loops=1)  
@@ -154,10 +159,10 @@ _(Далее будет предложено исследование эффек
 
 Запрос №2.  
     
-  SELECT pmId, pmNumber, pmDate, pmSum, (pmSum-COALESCE((SELECT sum(trfSum) FROM transfers  
-                                          WHERE pmNumber=trfPayment GROUP BY trfPayment), 0)) AS pmRest  
-  FROM payments;
-  
+    SELECT pmId, pmNumber, pmDate, pmSum, (pmSum-COALESCE((SELECT sum(trfSum) FROM transfers  
+                                           WHERE pmNumber=trfPayment GROUP BY trfPayment), 0)) AS pmRest  
+    FROM payments;
+                                                     QUERY PLAN   
        Seq Scan on payments  (cost=0.00..4954281.50 rows=15000 width=21) (actual time=4.521..51724.016 rows=15000 loops=1)
        SubPlan 1
          ->  GroupAggregate  (cost=0.00..330.26 rows=2 width=11) (actual time=3.431..3.432 rows=1 loops=15000)
@@ -172,9 +177,10 @@ _(Далее будет предложено исследование эффек
 
 Запрос №1.
 
-  EXPLAIN(ANALYZE) SELECT pmId, pmNumber, pmDate, pmSum, (pmSum-sum(COALESCE(trfSum, 0))) as pmRest  
-  FROM payments LEFT JOIN transfers  ON pmNumber=trfPayment GROUP BY pmNumber;  
-  
+    EXPLAIN(ANALYZE) SELECT pmId, pmNumber, pmDate, pmSum, (pmSum-sum(COALESCE(trfSum, 0))) as pmRest  
+    FROM payments LEFT JOIN transfers  ON pmNumber=trfPayment GROUP BY pmNumber;  
+    
+                                                     QUERY PLAN 
        HashAggregate  (cost=1098.93..1323.93 rows=15000 width=27) (actual time=182.229..213.442 rows=15000 loops=1)
        Group Key: payments.pmnumber
        ->  Hash Right Join  (cost=531.50..1023.93 rows=15000 width=27) (actual time=49.014..133.000 rows=19890 loops=1)
