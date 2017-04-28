@@ -116,3 +116,4 @@ ENV/
 /python/src/tests/data/test_output
 /sql/drop_tables.sql
 /sql/db_data_control.sql
+/sql/comparison

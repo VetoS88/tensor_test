@@ -54,32 +54,36 @@ _(Далее будет предложено исследование эффек
 
 ###### Для получения данных предлагается 4 возможных запроса.  
 
-1. Универсальный, подходит для обоих разработанных структур данных.  
-
-      SELECT pmId, pmNumber, pmDate, pmSum, (pmSum-sum(COALESCE(trfSum, 0))) as pmRest
-      FROM payments LEFT JOIN transfers  ON pmNumber=trfPayment GROUP BY pmNumber;
+1. Универсальный, подходит для обеих разработанных структур данных.
 
 
-2. Универсальный, подходит для обоих разработанных структур данных.  
+    SELECT pmId, pmNumber, pmDate, pmSum, (pmSum-sum(COALESCE(trfSum, 0))) as pmRest
+    FROM payments LEFT JOIN transfers  ON pmNumber=trfPayment GROUP BY pmNumber;
+
+
+2. Универсальный, подходит для обеих разработанных структур данных.  
+
 
      SELECT pmId, pmNumber, pmDate, pmSum, (pmSum-COALESCE((SELECT sum(trfSum) FROM transfers
                                           WHERE pmNumber=trfPayment GROUP BY trfPayment), 0)) AS pmRest
      FROM payments;
 
 
-3. Подходит для обоих разработанных структур данных.  
+3. Подходит для обеих разработанных структур данных.  
 
-      SELECT pmId, pmNumber, pmDate, pmSum, rest.pmRest
-      FROM payments JOIN (SELECT pmNumber, sum(pmSum) AS pmRest
-                          FROM(
-                              SELECT pmId, pmNumber, pmDate, pmSum FROM payments
-                              UNION ALL
-                              SELECT trfId, trfPayment, tfrDate, -trfSum FROM transfers
-                          ) as tr GROUP BY pmNumber) as rest
-      USING (pmNumber);
+
+        SELECT pmId, pmNumber, pmDate, pmSum, rest.pmRest
+        FROM payments JOIN (SELECT pmNumber, sum(pmSum) AS pmRest
+                            FROM(
+                                SELECT pmNumber, pmSum FROM payments
+                                UNION ALL
+                                SELECT trfPayment, -trfSum FROM transfers
+                            ) as tr GROUP BY pmNumber) as rest
+        USING (pmNumber);
 
 
 4. Запрос для базы данных со структурой описанной в файле **db_structure_additional_pmRest_trAccrual.sql**  
+
 
       SELECT * FROM payments;
 
@@ -116,10 +120,10 @@ _(Далее будет предложено исследование эффек
 Количество записей в таблице transactions - 15000.  
 
 
-Наиболее эффективный запросом является запрос № 4.
+Наиболее эффективным является запрос № 4.
 
 Судить об этом можно основываясь на плане запроса, 
-генерируемом планировщиком бызы данных для заданного оператора.
+генерируемом планировщиком базы данных для заданного оператора.
 
     EXPLAIN(ANALYZE) SELECT * FROM payments;  
 
@@ -130,18 +134,42 @@ _(Далее будет предложено исследование эффек
     (3 rows)
 
 
------------------------------------------------------------------------------------
+Поскольку запрос № 4 не применим к структуре без дополнительных полей,    
+есть необходимость рассмотреть запросы под номерами 3, 2, 1.  
 
-Далее представленны планы для других запросов;
+Зарос № 2 является самым неэффективным поскольку для каждой выводимой строки требуется совершать подзапрос  
+и вычислять значение поля, это требует дополнительного количества(равному количеству записей в таблице payments)   
+операций по выборке из таблицы transfers. Об этом можно судить основываясь на фрагменте плана запроса:  
 
-Запрос №3.
+        Seq Scan on transfers  (cost=0.00..330.23 rows=2 width=11) (actual time=2.141..3.413 rows=1 loops=15000)
+                             Filter: ((payments.pmnumber)::text = (trfpayment)::text)
+                             Rows Removed by Filter: 14417
+
+Весь план для запроса № 2:  
+
+        Seq Scan on payments  (cost=0.00..4954281.50 rows=15000 width=21) (actual time=4.521..51724.016 rows=15000 loops=1)
+           SubPlan 1
+             ->  GroupAggregate  (cost=0.00..330.26 rows=2 width=11) (actual time=3.431..3.432 rows=1 loops=15000)
+                   Group Key: transfers.trfpayment
+                   ->  Seq Scan on transfers  (cost=0.00..330.23 rows=2 width=11) (actual time=2.141..3.413 rows=1 loops=15000)
+                         Filter: ((payments.pmnumber)::text = (trfpayment)::text)
+                         Rows Removed by Filter: 14417
+         Planning time: 0.304 ms
+         Execution time: 51750.457 ms
+        (9 rows)
+
+
+
+Далее представлены планы для запросов № 3 и 1;  
+
+Запрос №3.  
 
       EXPLAIN(ANALYZE) SELECT pmId, pmNumber, pmDate, pmSum, rest.pmRest  
       FROM payments JOIN (SELECT pmNumber, sum(pmSum) AS pmRest  
                         FROM(  
-                            SELECT pmId, pmNumber, pmDate, pmSum FROM payments  
+                            SELECT pmNumber, pmSum FROM payments  
                             UNION ALL  
-                            SELECT trfId, trfPayment, tfrDate, -trfSum FROM transfers  
+                            SELECT trfPayment, -trfSum FROM transfers  
                         ) as tr GROUP BY pmNumber) as rest  
       USING (pmNumber);  
       
@@ -162,27 +190,7 @@ _(Далее будет предложено исследование эффек
     (12 rows)
 
 
-Запрос №2.  
-    
-    SELECT pmId, pmNumber, pmDate, pmSum, (pmSum-COALESCE((SELECT sum(trfSum) FROM transfers  
-                                           WHERE pmNumber=trfPayment GROUP BY trfPayment), 0)) AS pmRest  
-    FROM payments;  
-    
-    
-                                                     QUERY PLAN   
-       Seq Scan on payments  (cost=0.00..4954281.50 rows=15000 width=21) (actual time=4.521..51724.016 rows=15000 loops=1)
-       SubPlan 1
-         ->  GroupAggregate  (cost=0.00..330.26 rows=2 width=11) (actual time=3.431..3.432 rows=1 loops=15000)
-               Group Key: transfers.trfpayment
-               ->  Seq Scan on transfers  (cost=0.00..330.23 rows=2 width=11) (actual time=2.141..3.413 rows=1 loops=15000)
-                     Filter: ((payments.pmnumber)::text = (trfpayment)::text)
-                     Rows Removed by Filter: 14417
-     Planning time: 0.304 ms
-     Execution time: 51750.457 ms
-    (9 rows)
-
-
-Запрос №1.
+Запрос №1.  
 
     EXPLAIN(ANALYZE) SELECT pmId, pmNumber, pmDate, pmSum, (pmSum-sum(COALESCE(trfSum, 0))) as pmRest  
     FROM payments LEFT JOIN transfers  ON pmNumber=trfPayment GROUP BY pmNumber;  
@@ -201,3 +209,25 @@ _(Далее будет предложено исследование эффек
      Planning time: 0.567 ms
      Execution time: 231.393 ms
     (10 rows)
+
+Как видно из плана запроса № 3, для вычисления суммы остатка требуется два дополнительных сканирования  
+таблиц _payments_ и _transfers_.
+
+     ->  Seq Scan on payments payments_1  (cost=0.00..344.00 rows=15000 width=9) (actual time=0.010..21.017 rows=15000 loops=1)  
+     ->  Seq Scan on transfers  (cost=0.00..294.18 rows=14418 width=37) (actual time=0.024..22.272 rows=14418 loops=1)
+
+
+Вследствии этого запрос № 1
+
+    SELECT pmId, pmNumber, pmDate, pmSum, (pmSum-sum(COALESCE(trfSum, 0))) as pmRest
+    FROM payments LEFT JOIN transfers  ON pmNumber=trfPayment GROUP BY pmNumber;
+
+**является наиболее эффективным**, что подтверждается фактическим временем выполнения (Execution time) 231.393 ms   
+по сравнению с дугими запросами 311.093 ms (№3) 51750.457 ms (№2).
+
+
+Вывод
+-------------------------------------------------------
+Структура базы данных, представленная в фале **db_structure_additional_pmRest_trAccrual.sql**
+и предполагающая введение дополнительных полей _pmRest_ и _trAccrual_, является наиболее  
+эффективной и прозрачной с точки зрения выполнения запросов на получение данных.
