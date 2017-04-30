@@ -93,7 +93,7 @@ IF (NEW.trfPayment = OLD.trfPayment) THEN
     END IF;
 ELSE
     IF (pmRest - NEW.trfSum) < 0 THEN
-        RAISE INFO 'pmRest after transaction = %  ', (pmRest-NEW.trfSum);
+        RAISE INFO 'pmRest after transaction = %  ', (pmRest - NEW.trfSum);
         RAISE EXCEPTION 'not enough rest ';
     END IF;
 END IF;
@@ -102,12 +102,12 @@ FROM transactions LEFT JOIN transfers  ON trNumber=trfTransaction
 WHERE trNumber = NEW.trfTransaction GROUP BY trNumber;
 IF (NEW.trfTransaction = OLD.trfTransaction) THEN
     IF (trAccrual + OLD.trfSum - NEW.trfSum) < 0 THEN
-        RAISE INFO 'trAccrual after transaction = % ', (trAccrual + OLD.trfSum -NEW.trfSum);
+        RAISE INFO 'trAccrual after transaction = % ', (trAccrual + OLD.trfSum - NEW.trfSum);
         RAISE EXCEPTION 'оver tranfer sum';
     END IF;
 ELSE
      IF (trAccrual - NEW.trfSum) < 0 THEN
-        RAISE INFO 'trAccrual after transaction = % ', (trAccrual-NEW.trfSum);
+        RAISE INFO 'trAccrual after transaction = % ', (trAccrual - NEW.trfSum);
         RAISE EXCEPTION 'оver tranfer sum';
     END IF;
 END IF;
